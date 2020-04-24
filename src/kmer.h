@@ -26,6 +26,8 @@ public:
     void reportJSON(ofstream& ofs);
 
     static uint64 seq2uint64(string& seq, uint32 pos, uint32 len, bool& valid);
+    static string seqFromUint64(uint64 key, uint32 len);
+    static bool test();
 
 private:
     unordered_map<uint64, uint32> mKmerHits;

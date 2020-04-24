@@ -1,5 +1,6 @@
 #include "unittest.h"
 #include "sequence.h"
+#include "kmer.h"
 #include <time.h>
 
 UnitTest::UnitTest(){
@@ -8,6 +9,7 @@ UnitTest::UnitTest(){
 
 void UnitTest::run(){
     bool passed = true;
+    passed &= Kmer::test();
     printf("\n==========================\n");
     printf("%s\n\n", passed?"ALL PASSED":"FAILED");
 }

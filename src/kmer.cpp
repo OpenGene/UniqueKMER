@@ -35,10 +35,6 @@ void Kmer::init(string filename)
             if(mOptions->kmerKeyLen == 0)
                 mOptions->kmerKeyLen = seq.length();
         }
-        if(seq.length() != mOptions->kmerKeyLen) {
-            cerr << "KMER length must be " << mOptions->kmerKeyLen << ", skipped " << seq << endl;
-            continue;
-        }
         bool valid = true;
         uint64 kmer64 = seq2uint64(seq, 0, seq.length(), valid);
         if(valid) {
@@ -131,6 +127,20 @@ void Kmer::reportJSON(ofstream& ofs) {
     ofs << endl;
 }
 
+string Kmer::seqFromUint64(uint64 key, uint32 len) {
+    string seq(len, 'N');
+    int processed = 0;
+    while(processed < len) {
+        int val = 0x03 & key;
+        // const char ATCG_BASES[] = {'A', 'T', 'C', 'G'}; in common.h
+        char base = ATCG_BASES[val];
+        seq[len - processed - 1] = base;
+        key = (key>>2);
+        processed++;
+    }
+    return seq;
+}
+
 uint64 Kmer::seq2uint64(string& seq, uint32 pos, uint32 len, bool& valid) {
     uint64 key = 0;
     for(uint32 i=0; i<len; i++) {
@@ -156,4 +166,14 @@ uint64 Kmer::seq2uint64(string& seq, uint32 pos, uint32 len, bool& valid) {
     }
     valid = true;
     return key;
+}
+
+bool Kmer::test() {
+    string seq = "ATCGTCGAAAAATTTTATCG";
+    bool valid;
+    uint64 key = seq2uint64(seq, 0, 20, valid);
+    string seq2= seqFromUint64(key, 20);
+    cerr << seq << endl;
+    cerr << seq2 << endl;
+    return seq ==  seq2;
 }
