@@ -12,6 +12,6 @@ Processor::~Processor() {
 bool Processor::process() {
 	Genomes genomes(mOptions->faFile, mOptions);
 	genomes.run();
-	genomes.report();
+	genomes.output();
     return true;
 }

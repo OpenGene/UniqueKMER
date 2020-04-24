@@ -29,7 +29,7 @@ int main(int argc, char* argv[]){
 
     cmdline::parser cmd;
     cmd.add<string>("fasta", 'f', "FASTA input file name", true, "");
-    cmd.add<string>("outdir", 'o', "Directory for output. Default . means current directory.", false, ".");
+    cmd.add<string>("outdir", 'o', "Directory for output. Default is KMER in the current directory.", false, "KMER");
     cmd.add<int>("kmer", 'k', "The length k of KMER (10~32), default 25", false, 25); 
 
     cmd.parse_check(argc, argv);

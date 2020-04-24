@@ -29,6 +29,16 @@ bool Options::validate() {
         check_file_valid(hgFile);
     }
 
+    if(!outdir.empty()) {
+        if(!file_exists(outdir)) {
+            if(mkdir(outdir.c_str(), 0666)!=0)
+                error_exit("Failed to create directory: " + outdir);
+        }
+
+        if(!is_directory(outdir))
+            error_exit("Not a directory: " + outdir);
+    }
+
     if(kmerKeyLen < 10 || kmerKeyLen > 32)
         error_exit("KMER length (-k) should be between 10 ~ 32, suggest 25");
 

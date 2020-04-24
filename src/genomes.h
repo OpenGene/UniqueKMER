@@ -39,13 +39,11 @@ public:
     Genomes(string fastaFile, Options* opt);
     ~Genomes();
     void run();
-    void report();
-    void reportJSON(ofstream& ofs);
-    void reportHtml(ofstream& ofs);
+    void output();
 
 private:
-    void buildKmerTable();
-    void addKmer(uint64 key, int id);
+    void buildKmerTable(bool reversed);
+    void addKmer(uint64 key, int id, bool reversed);
     void makeUniqueKMER();
 
 private:

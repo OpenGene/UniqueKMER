@@ -4,6 +4,7 @@
 #include "editdistance.h"
 #include <sstream>
 #include <memory.h>
+#include "sequence.h"
 
 // we use 512M memory
 const int BLOOM_FILTER_LENGTH = (1<<29);
@@ -38,7 +39,8 @@ void Genomes::run() {
         mGenomeNum++;
     }
 
-    buildKmerTable();
+    buildKmerTable(false);
+    buildKmerTable(true);
     makeUniqueKMER();
 }
 
@@ -55,13 +57,18 @@ void Genomes::makeUniqueKMER() {
     }
 }
 
-void Genomes::buildKmerTable() {
+void Genomes::buildKmerTable(bool reversed) {
     int keylen = mOptions->kmerKeyLen;
     int blankBits = 64 - 2*keylen;
     const int polyATailLen = 28;
     bool valid = true;
     for(uint32 i=0; i<mNames.size(); i++) {
         string& seq = mSequences[i];
+        if(reversed) {
+            Sequence s(seq);
+            Sequence rc = ~s;
+            seq = rc.mStr;
+        }
         if(seq.length() < keylen)
             continue;
         // first calculate the first keylen-1 kmer
@@ -111,15 +118,18 @@ void Genomes::buildKmerTable() {
                     continue;
             }
             key = (key << blankBits) >> blankBits;
-            addKmer(key, i);
+            addKmer(key, i, reversed);
         }
     }
 }
 
-void Genomes::addKmer(uint64 key, int id) {
+void Genomes::addKmer(uint64 key, int id, bool reversed) {
     unordered_map<uint64, int>::iterator iter = mKmerTable.find(key);
-    if(iter == mKmerTable.end())
-        mKmerTable[key] = id;
+    if(iter == mKmerTable.end()) {
+        // if it's reverse complemented sequence, we just use it to mark the KMER not unique, but dot add it as a new unique
+        if(!reversed)
+            mKmerTable[key] = id;
+    }
     else {
         if(iter->second != id)
             iter->second = -1;
@@ -127,7 +137,7 @@ void Genomes::addKmer(uint64 key, int id) {
 
 }
 
-void Genomes::report() {
+void Genomes::output() {
     for(int i=0; i<mGenomeNum; i++) {
         cerr << ">" << mNames[i] << endl;
         for(int k=0; k<mUniqueKmers[i].size(); k++) {
@@ -135,10 +145,4 @@ void Genomes::report() {
         }
         cerr << endl;
     }
-}
-
-void Genomes::reportJSON(ofstream& ofs) {
-}
-
-void Genomes::reportHtml(ofstream& ofs) {
 }
