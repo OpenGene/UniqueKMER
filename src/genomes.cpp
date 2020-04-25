@@ -137,9 +137,9 @@ void Genomes::addKmer(uint64 key, int id, bool reversed) {
 
 }
 
-void Genomes::outputGenome(int id, string& path, string& filename) {
-    ofstream ofs;
-    ofs.open(joinpath(path, filename));
+void Genomes::outputKmer(int id, string& path, string& kmerFilename) {
+    ofstream kmerofs;
+    kmerofs.open(joinpath(path, kmerFilename));
 
     map<int, string> posSeq;
     for(int i=0; i<mUniqueKmers[id].size(); i++) {
@@ -152,8 +152,26 @@ void Genomes::outputGenome(int id, string& path, string& filename) {
 
     map<int, string>::iterator iter;
     for(iter = posSeq.begin(); iter != posSeq.end(); iter++) {
-        ofs << ">p" << iter->first << endl;
-        ofs << iter->second << endl;
+        kmerofs << ">p" << iter->first << endl;
+        kmerofs << iter->second << endl;
+    }
+    kmerofs.close();
+}
+
+void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
+    ofstream ofs;
+    ofs.open(joinpath(path, genomeFilename));
+
+    ofs << ">" << mNames[id];
+
+    const int line =  80;
+    size_t seqlen = mSequences[id].length();
+    size_t finished = 0;
+    while(finished < seqlen) {
+        size_t len = min((size_t)80, seqlen - finished);
+        string seq = mSequences[id].substr(finished, len);
+        finished += len;
+        ofs << endl << seq;
     }
     ofs.close();
 }
@@ -184,7 +202,8 @@ void Genomes::output() {
                 error_exit("Not a directory: " + path);
         }
 
-        string filename = str_keep_valid_filename(mNames[i]) + ".fasta";
+        string kmerFilename = str_keep_valid_filename(mNames[i]) + ".kmer.fasta";
+        string genomeFilename = str_keep_valid_filename(mNames[i]) + ".fasta";
 
         string color;
         int unique = mUniqueKmers[i].size();
@@ -207,9 +226,13 @@ void Genomes::output() {
         else
             color = "#333333";
 
-        index << "<li>" <<  mNames[i] <<  " (" << mUniqueKmers[i].size() << " unique) <a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << filename << "'>  KMER file </a> </li>" << endl;
+        index << "<li>" <<  mNames[i] <<  " (" << mUniqueKmers[i].size() << " unique)";
+        index << "  &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << kmerFilename << "'>KMER file</a>";
+        index << "&nbsp; | &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << genomeFilename << "'>Genome file</a>";
+        index << " </li>" << endl;
         
-        outputGenome(i, path, filename);
+        outputKmer(i, path, kmerFilename);
+        outputGenome(i, path, genomeFilename);
     }
 
     index << "</ul></div></body></html>" << endl;
