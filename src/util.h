@@ -211,6 +211,19 @@ inline  string str_keep_alpha(const  string& s)
     return new_str;
 }
 
+// Remove non filename characters from a string
+inline  string str_keep_valid_filename(const  string& s)
+{
+     string new_str;
+    for( size_t it =0; it < s.size(); it++) {
+        char c=s[it];
+        if(  isalpha(c) || (c>='0' && c<='9') || c==' ' || c=='_' || c=='-' || c=='.' || c==',') {
+            new_str += s[it];
+        }
+    }
+    return new_str;
+}
+
 
 // Remove invalid sequence characters from a string
 inline void str_keep_valid_sequence(  string& s, bool forceUpperCase = false)

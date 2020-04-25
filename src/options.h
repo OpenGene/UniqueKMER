@@ -24,6 +24,8 @@ public:
     string outdir;
     // KMER len
     int kmerKeyLen;
+    // genomes after genomeLimit will be skipped
+    int genomeLimit;
 
 };
 

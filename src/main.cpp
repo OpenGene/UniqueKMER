@@ -29,8 +29,9 @@ int main(int argc, char* argv[]){
 
     cmdline::parser cmd;
     cmd.add<string>("fasta", 'f', "FASTA input file name", true, "");
-    cmd.add<string>("outdir", 'o', "Directory for output. Default is KMER in the current directory.", false, "KMER");
+    cmd.add<string>("outdir", 'o', "Directory for output. Default is unique_kmers in the current directory.", false, "unique_kmers");
     cmd.add<int>("kmer", 'k', "The length k of KMER (10~32), default 25", false, 25); 
+    cmd.add<int>("genome_limit", 'g', "Process up to genome_limit genomes in the FASTA input file. Default 0 means no limit. This option is for DEBUG.", false, 0); 
 
     cmd.parse_check(argc, argv);
 
@@ -43,6 +44,7 @@ int main(int argc, char* argv[]){
 
     opt.faFile = cmd.get<string>("fasta");
     opt.kmerKeyLen = cmd.get<int>("kmer");
+    opt.genomeLimit = cmd.get<int>("genome_limit");
     opt.outdir = cmd.get<string>("outdir");
 
     stringstream ss;

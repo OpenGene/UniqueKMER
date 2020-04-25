@@ -45,6 +45,7 @@ private:
     void buildKmerTable(bool reversed);
     void addKmer(uint64 key, int id, bool reversed);
     void makeUniqueKMER();
+    void outputGenome(int id, string& path, string& filename);
 
 private:
     int mGenomeNum;

@@ -9,6 +9,7 @@ Options::Options(){
     hgFile = "";
     outdir = "";
     kmerKeyLen = 25;
+    genomeLimit = 0;
 }
 
 void Options::init() {
@@ -31,7 +32,7 @@ bool Options::validate() {
 
     if(!outdir.empty()) {
         if(!file_exists(outdir)) {
-            if(mkdir(outdir.c_str(), 0666)!=0)
+            if(mkdir(outdir.c_str(), 0755)!=0)
                 error_exit("Failed to create directory: " + outdir);
         }
 
@@ -41,6 +42,9 @@ bool Options::validate() {
 
     if(kmerKeyLen < 10 || kmerKeyLen > 32)
         error_exit("KMER length (-k) should be between 10 ~ 32, suggest 25");
+
+    if(genomeLimit < 0)
+        error_exit("Genome limit (-g) cannot be negative");
 
     return true;
 }

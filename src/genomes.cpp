@@ -29,8 +29,8 @@ void Genomes::run() {
     map<string, string>::iterator iter;
     mGenomeNum = 0;
     for(iter = genomes.begin(); iter != genomes.end() ; iter++) {
-        if(mGenomeNum >= 100) {
-            cerr << "UniqueKMER only supports up to 10 genomes, other genomes will be skipped." << endl;
+        if(mOptions->genomeLimit>0 && mGenomeNum >= mOptions->genomeLimit) {
+            cerr << "UniqueKMER only supports up to " << mOptions->genomeLimit << " genomes, other genomes will be skipped." << endl;
             break;
         }
         mNames.push_back(iter->first);
@@ -137,12 +137,82 @@ void Genomes::addKmer(uint64 key, int id, bool reversed) {
 
 }
 
-void Genomes::output() {
-    for(int i=0; i<mGenomeNum; i++) {
-        cerr << ">" << mNames[i] << endl;
-        for(int k=0; k<mUniqueKmers[i].size(); k++) {
-            cerr << k << ":" << mUniqueKmers[i][k] << endl;
+void Genomes::outputGenome(int id, string& path, string& filename) {
+    ofstream ofs;
+    ofs.open(joinpath(path, filename));
+
+    map<int, string> posSeq;
+    for(int i=0; i<mUniqueKmers[id].size(); i++) {
+        string seq = mUniqueKmers[id][i];
+        int pos = mSequences[id].find(seq);
+        if (pos != string::npos) {
+            posSeq[pos]=seq;
         }
-        cerr << endl;
     }
+
+    map<int, string>::iterator iter;
+    for(iter = posSeq.begin(); iter != posSeq.end(); iter++) {
+        ofs << ">p" << iter->first << endl;
+        ofs << iter->second << endl;
+    }
+    ofs.close();
+}
+
+void Genomes::output() {
+    ofstream index;
+    index.open( joinpath(mOptions->outdir, "index.html"), ifstream::out);
+
+    index<<"<HTML><head><title>UniqueKMER Report</title></head><div><ul>" << endl;
+
+    for(int i=0; i<mGenomeNum; i++) {
+        int contigSize = mSequences[i].size();
+        string folder = to_string(contigSize % 100);
+        string path = joinpath(mOptions->outdir,"genomes_kmers");
+        if(!file_exists(path)) {
+            if(mkdir(path.c_str(), 0755) != 0)
+                error_exit("Failed to create directory: " + path);
+        } else {
+            if(!is_directory(path))
+                error_exit("Not a directory: " + path);
+        }
+        path = joinpath(path,folder);
+        if(!file_exists(path)) {
+            if(mkdir(path.c_str(), 0755) != 0)
+                error_exit("Failed to create directory: " + path);
+        } else {
+            if(!is_directory(path))
+                error_exit("Not a directory: " + path);
+        }
+
+        string filename = str_keep_valid_filename(mNames[i]) + ".fasta";
+
+        string color;
+        int unique = mUniqueKmers[i].size();
+        if(unique  > 0)
+            color = "blue";
+        /*else if(unique  > 10000)
+            color = "#cc9900";
+        else if(unique  > 3000)
+            color = "#eacc00";
+        else if(unique  > 1000)
+            color = "#33cc00";
+        else if(unique  > 300)
+            color = "#00ff62";
+        else if(unique  > 100)
+            color = "#00e1cc";
+        else if(unique  > 30)
+            color = "#0095cc";
+        else if(unique  > 0)
+            color = "#001acc";*/
+        else
+            color = "#333333";
+
+        index << "<li>" <<  mNames[i] <<  " (" << mUniqueKmers[i].size() << " unique) <a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << filename << "'>  KMER file </a> </li>" << endl;
+        
+        outputGenome(i, path, filename);
+    }
+
+    index << "</ul></div></body></html>" << endl;
+
+    index.close();
 }
