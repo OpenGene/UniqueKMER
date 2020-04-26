@@ -12,6 +12,7 @@ const int BLOOM_FILTER_LENGTH = (1<<29);
 
 Genomes::Genomes(string faFile, Options* opt)
 {
+    cerr << "------Load FASTA: " << faFile << endl;
     mFastaReader = new FastaReader(faFile);
     mOptions = opt;
     mFastaReader->readAll();
@@ -36,16 +37,16 @@ void Genomes::run() {
         }
         mNames.push_back(iter->first);
         mSequences.push_back(iter->second);
-        mUniqueKmers.push_back(vector<string>());
+        mUniqueKmers.push_back(set<string>());
         mGenomeNum++;
     }
 
-    cerr << "build KMER table" << endl;
-    cerr << "Forward >>>"<<endl;
+    cerr << "------Build KMER table" << endl;
+    cerr << "------Forward >>>"<<endl;
     buildKmerTable(false);
-    cerr << "Reverse <<<"<<endl;
+    cerr << "------Reverse <<<"<<endl;
     buildKmerTable(true);
-    cerr << "Find unique KMERs...";
+    cerr << "------Find unique KMERs...";
     makeUniqueKMER();
     cerr << "done." << endl;
 }
@@ -58,7 +59,7 @@ void Genomes::makeUniqueKMER() {
 
         if(id >= 0) {
             string kmer = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
-            mUniqueKmers[id].push_back(kmer);
+            mUniqueKmers[id].insert(kmer);
         }
     }
 }
@@ -69,7 +70,7 @@ void Genomes::buildKmerTable(bool reversed) {
     const int polyATailLen = 28;
     bool valid = true;
     for(uint32 i=0; i<mNames.size(); i++) {
-        string& seq = mSequences[i];
+        string seq = mSequences[i];
         if(reversed) {
             Sequence s(seq);
             Sequence rc = ~s;
@@ -152,22 +153,39 @@ string Genomes::alignToDigits(int val, int digits) {
     return s;
 }
 
-void Genomes::outputKmer(int id, string& path, string& kmerFilename) {
+int Genomes::outputKmer(int id, string& path, string& kmerFilename) {
     ofstream kmerofs;
     kmerofs.open(joinpath(path, kmerFilename));
 
     map<int, string> posSeq;
-    for(int i=0; i<mUniqueKmers[id].size(); i++) {
-        string seq = mUniqueKmers[id][i];
-        int pos = mSequences[id].find(seq);
-        if (pos != string::npos) {
-            posSeq[pos]=seq;
+    set<string>::iterator setiter;
+
+    if(mUniqueKmers[id].size() < mSequences[id].length()/300) {
+        for(setiter=mUniqueKmers[id].begin(); setiter!=mUniqueKmers[id].end(); setiter++) {
+            string seq = *setiter;
+            int pos = mSequences[id].find(seq);
+            if (pos != string::npos) {
+                posSeq[pos]=seq;
+            } else {
+                cerr << "not found: " << seq << endl;
+            }
+        }
+    } else {
+        string& genome = mSequences[id];
+        for(int pos=0; pos<genome.length() - mOptions->kmerKeyLen; pos++) {
+            string seq = genome.substr(pos, mOptions->kmerKeyLen);
+            setiter = mUniqueKmers[id].find(seq);
+            if(setiter != mUniqueKmers[id].end()) {
+                posSeq[pos] =  seq;
+                mUniqueKmers[id].erase(setiter);
+            }
         }
     }
 
     int digits = ceil(log10(mSequences[id].length()+1.0));
 
     int last = -1;
+    int count = 0;
     map<int, string>::iterator iter;
     for(iter = posSeq.begin(); iter != posSeq.end(); iter++) {
         int pos = iter->first;
@@ -176,8 +194,11 @@ void Genomes::outputKmer(int id, string& path, string& kmerFilename) {
         kmerofs << ">p" << alignToDigits(pos, digits) << endl;
         kmerofs << iter->second << endl;
         last = pos;
+        count++;
     }
     kmerofs.close();
+
+    return count;
 }
 
 void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
@@ -196,7 +217,6 @@ void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
         ofs << endl << seq;
     }
     ofs.close();
-    cerr << id << endl;
 }
 
 void Genomes::output() {
@@ -205,6 +225,7 @@ void Genomes::output() {
 
     index<<"<HTML><head><title>UniqueKMER Report</title></head><div><ul>" << endl;
 
+    cerr << "------Output unique KMER and genome FASTA files" << endl;
     for(int i=0; i<mGenomeNum; i++) {
         int contigSize = mSequences[i].size();
         string folder = to_string(contigSize % 100);
@@ -235,13 +256,15 @@ void Genomes::output() {
         else
             color = "#333333";
 
-        index << "<li>" <<  mNames[i] <<  " (" << mUniqueKmers[i].size() << " unique)";
+        int count = outputKmer(i, path, kmerFilename);
+
+        index << "<li>" <<  mNames[i] <<  " (" << count << " unique)";
         index << "  &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << kmerFilename << "'>KMER file</a>";
         index << "&nbsp; | &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << genomeFilename << "'>Genome file</a>";
         index << " </li>" << endl;
         
-        outputKmer(i, path, kmerFilename);
-        //outputGenome(i, path, genomeFilename);
+        outputGenome(i, path, genomeFilename);
+        cerr << (i+1) << "/" << mGenomeNum << ": " << mNames[i] << "." << " unique: " << count << endl;
     }
 
     index << "</ul></div></body></html>" << endl;

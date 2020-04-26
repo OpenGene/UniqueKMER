@@ -65,7 +65,7 @@ int main(int argc, char* argv[]){
     
     time_t t2 = time(NULL);
 
-    cerr << endl << "Output to: " << opt.outdir << endl;
+    cerr << endl << "Please find results (index.html, KMER/Genome files) in folder: " << opt.outdir << endl;
     cerr << endl << command << endl;
     cerr << "uniquekmer v" << UNIQUEKMER_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
 

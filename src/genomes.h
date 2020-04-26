@@ -45,7 +45,7 @@ private:
     void buildKmerTable(bool reversed);
     void addKmer(uint64 key, int id, bool reversed);
     void makeUniqueKMER();
-    void outputKmer(int id, string& path, string& filename);
+    int outputKmer(int id, string& path, string& filename);
     void outputGenome(int id, string& path, string& filename);
     string alignToDigits(int val, int digits);
 
@@ -54,7 +54,7 @@ private:
     FastaReader* mFastaReader;
     vector<string> mSequences;
     vector<string> mNames;
-    vector<vector<string>> mUniqueKmers;
+    vector<set<string>> mUniqueKmers;
     // KMER: value
     // If value is negative, means more than one contig hit this KMER
     unordered_map<uint64, int> mKmerTable;
