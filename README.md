@@ -1,7 +1,7 @@
 # UniqueKMER
 Generate unique KMERs for every contig in a FASTA file.  
 
-Unique KMER is consisted of KMER keys (i.e. ATCGATCCTTAAGG) that are only presented in one contig, but not presented at any other contigs (for both forward and reverse strands).  
+Unique KMER is consisted of KMER keys (i.e. ATCGATCCTTAAGG) that are only presented in one contig, but not presented in any other contigs (for both forward and reverse strands).  
 
 This tool accepts the input of a FASTA file consisting of many contigs, and extract unique KMERs for each contig.
 
