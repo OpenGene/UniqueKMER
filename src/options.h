@@ -26,6 +26,8 @@ public:
     int kmerKeyLen;
     // genomes after genomeLimit will be skipped
     int genomeLimit;
+    // spacing for KMER
+    int kmerSpacing;
 
 };
 

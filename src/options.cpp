@@ -10,6 +10,7 @@ Options::Options(){
     outdir = "";
     kmerKeyLen = 25;
     genomeLimit = 0;
+    kmerSpacing = 0;
 }
 
 void Options::init() {

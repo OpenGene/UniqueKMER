@@ -4,6 +4,7 @@
 #include "editdistance.h"
 #include <sstream>
 #include <memory.h>
+#include <math.h>
 #include "sequence.h"
 
 // we use 512M memory
@@ -39,9 +40,14 @@ void Genomes::run() {
         mGenomeNum++;
     }
 
+    cerr << "build KMER table" << endl;
+    cerr << "Forward >>>"<<endl;
     buildKmerTable(false);
+    cerr << "Reverse <<<"<<endl;
     buildKmerTable(true);
+    cerr << "Find unique KMERs...";
     makeUniqueKMER();
+    cerr << "done." << endl;
 }
 
 void Genomes::makeUniqueKMER() {
@@ -69,6 +75,7 @@ void Genomes::buildKmerTable(bool reversed) {
             Sequence rc = ~s;
             seq = rc.mStr;
         }
+        cerr << (i+1) << "/" << mGenomeNum << ": " << mNames[i] <<  endl;
         if(seq.length() < keylen)
             continue;
         // first calculate the first keylen-1 kmer
@@ -137,6 +144,14 @@ void Genomes::addKmer(uint64 key, int id, bool reversed) {
 
 }
 
+string Genomes::alignToDigits(int val, int digits) {
+    string s = to_string(val);
+    while(s.length() < digits)
+        s = "0"+s;
+
+    return s;
+}
+
 void Genomes::outputKmer(int id, string& path, string& kmerFilename) {
     ofstream kmerofs;
     kmerofs.open(joinpath(path, kmerFilename));
@@ -150,10 +165,17 @@ void Genomes::outputKmer(int id, string& path, string& kmerFilename) {
         }
     }
 
+    int digits = ceil(log10(mSequences[id].length()+1.0));
+
+    int last = -1;
     map<int, string>::iterator iter;
     for(iter = posSeq.begin(); iter != posSeq.end(); iter++) {
-        kmerofs << ">p" << iter->first << endl;
+        int pos = iter->first;
+        if(last >=0 && pos-last <= mOptions->kmerSpacing)
+            continue;
+        kmerofs << ">p" << alignToDigits(pos, digits) << endl;
         kmerofs << iter->second << endl;
+        last = pos;
     }
     kmerofs.close();
 }
@@ -174,6 +196,7 @@ void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
         ofs << endl << seq;
     }
     ofs.close();
+    cerr << id << endl;
 }
 
 void Genomes::output() {
@@ -209,20 +232,6 @@ void Genomes::output() {
         int unique = mUniqueKmers[i].size();
         if(unique  > 0)
             color = "blue";
-        /*else if(unique  > 10000)
-            color = "#cc9900";
-        else if(unique  > 3000)
-            color = "#eacc00";
-        else if(unique  > 1000)
-            color = "#33cc00";
-        else if(unique  > 300)
-            color = "#00ff62";
-        else if(unique  > 100)
-            color = "#00e1cc";
-        else if(unique  > 30)
-            color = "#0095cc";
-        else if(unique  > 0)
-            color = "#001acc";*/
         else
             color = "#333333";
 
@@ -232,7 +241,7 @@ void Genomes::output() {
         index << " </li>" << endl;
         
         outputKmer(i, path, kmerFilename);
-        outputGenome(i, path, genomeFilename);
+        //outputGenome(i, path, genomeFilename);
     }
 
     index << "</ul></div></body></html>" << endl;

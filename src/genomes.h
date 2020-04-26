@@ -47,6 +47,7 @@ private:
     void makeUniqueKMER();
     void outputKmer(int id, string& path, string& filename);
     void outputGenome(int id, string& path, string& filename);
+    string alignToDigits(int val, int digits);
 
 private:
     int mGenomeNum;
