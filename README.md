@@ -1,8 +1,9 @@
 # UniqueKMER
-Generate unique KMERs for every contig in a FASTA file.
+Generate unique KMERs for every contig in a FASTA file.  
 
-## how it works?
-A `unique` KMER means a KMER key (such ATCGATCCTTAAGG) is only presented in one contig, and not presented at any other contig (in both forward and reverse strands). This tool accepts the input of a FASTA file consisting of many contigs, and extract unique KMERs for each contig.
+Unique KMER is consisted of KMER keys (i.e. ATCGATCCTTAAGG) that are only presented in one contig, but not presented at any other contigs (for both forward and reverse strands).  
+
+This tool accepts the input of a FASTA file consisting of many contigs, and extract unique KMERs for each contig.
 
 # get this tool
 ## compile from source
@@ -13,16 +14,15 @@ git clone https://github.com/OpenGene/UniqueKMER.git
 cd UniqueKMER
 make
 ```
-# Usage
+# usage
 Simple example:
 ```shell
 uniquekmer -f test.fasta
 ```
 You can get the test.fasta from: http://opengene.org/test.fasta
 
-Full options:
-```shell
-options:
+Options:
+```shel
   -f, --fasta           FASTA input file name (string)
   -o, --outdir          Directory for output. Default is unique_kmers in the current directory. (string [=unique_kmers])
   -k, --kmer            The length k of KMER (10~32), default 25 (int [=25])
