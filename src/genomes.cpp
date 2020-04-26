@@ -76,6 +76,10 @@ void Genomes::buildKmerTable(bool reversed) {
             Sequence rc = ~s;
             seq = rc.mStr;
         }
+        if(reversed)
+            cerr << "<<< ";
+        else
+            cerr << ">>> ";
         cerr << (i+1) << "/" << mGenomeNum << ": " << mNames[i] <<  endl;
         if(seq.length() < keylen)
             continue;
