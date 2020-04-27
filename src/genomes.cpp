@@ -96,9 +96,9 @@ void Genomes::filterReferenceGenome() {
     int keylen = min(16, mOptions->kmerKeyLen);
     cerr << "------Calculate unique key coverage in " << keylen << " bp" << endl;
     
-    size_t flagBufSize = 0x01 << keylen;
+    size_t flagBufSize = 1L << (2*keylen);
     bool* flagBuf = new bool[flagBufSize];
-    memset(flagBuf, 0, flagBufSize);
+    memset(flagBuf, 0, flagBufSize * sizeof(bool));
     int blankBits = 64 - 2*keylen;
 
     uint64 mask = 0;
@@ -389,7 +389,7 @@ void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
         size_t len = min((size_t)80, seqlen - finished);
         string seq = mSequences[id].substr(finished, len);
         finished += len;
-        ofs << endl << seq;
+        ofs << seq;
     }
     ofs.close();
 }
