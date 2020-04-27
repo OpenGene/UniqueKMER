@@ -193,7 +193,6 @@ void Genomes::filterReferenceGenome() {
             uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
 
             bool mapped = false;
-            string keySeq;
             for(int rc =0; rc<2; rc++) {
                 if(mapped)
                     break;
@@ -207,7 +206,7 @@ void Genomes::filterReferenceGenome() {
                     uint64 part = (key & (mask << offset)) >> offset;
                     uint32 part32 = (uint32) part;
                     if(keyContigs.find(part32) != keyContigs.end()) {
-                        keySeq = Kmer::seqFromUint64(part, mOptions->kmerKeyLen);
+                        string keySeq = Kmer::seqFromUint64(part, mOptions->kmerKeyLen);
 
                         for(int p=0; p<keyPositions[part32].size(); p++) {
                             int ctg = keyContigs[part32][p];
@@ -226,6 +225,7 @@ void Genomes::filterReferenceGenome() {
             }
 
             if(!mapped) {
+                string keySeq = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
                 mUniqueKmers[i].insert(keySeq);
             }
         }
@@ -389,7 +389,7 @@ void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
         size_t len = min((size_t)80, seqlen - finished);
         string seq = mSequences[id].substr(finished, len);
         finished += len;
-        ofs << seq;
+        ofs << endl <<  seq;
     }
     ofs.close();
 }
