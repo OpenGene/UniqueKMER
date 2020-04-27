@@ -33,6 +33,8 @@ int main(int argc, char* argv[]){
     cmd.add<int>("kmer", 'k', "The length k of KMER (10~32), default 25", false, 25); 
     cmd.add<int>("spacing", 's', "If a key with POS is recorded, then skip [POS+1...POS+spacing] to avoid too compact result (0~100). default 0 means no skipping.", false, 0); 
     cmd.add<int>("genome_limit", 'g', "Process up to genome_limit genomes in the FASTA input file. Default 0 means no limit. This option is for DEBUG.", false, 0); 
+    cmd.add<string>("ref", 'r', "Reference genome FASTA file name. Specify this only when you want to filter out the unique KMER that can be mapped to reference genome.", false, "");
+    cmd.add<int>("edit_distance", 'e', "KMER mapped to reference genome with edit distance <= edit_distance will be removed (0~16). 3 for default.", false, 3);
 
     cmd.parse_check(argc, argv);
 
@@ -48,6 +50,8 @@ int main(int argc, char* argv[]){
     opt.genomeLimit = cmd.get<int>("genome_limit");
     opt.kmerSpacing = cmd.get<int>("spacing");
     opt.outdir = cmd.get<string>("outdir");
+    opt.refFile = cmd.get<string>("ref");
+    opt.edThreshold = cmd.get<int>("edit_distance");
 
     stringstream ss;
     for(int i=0;i<argc;i++){

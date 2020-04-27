@@ -6,11 +6,12 @@
 
 Options::Options(){
     faFile = "";
-    hgFile = "";
+    refFile = "";
     outdir = "";
     kmerKeyLen = 25;
     genomeLimit = 0;
     kmerSpacing = 0;
+    edThreshold = 3;
 }
 
 void Options::init() {
@@ -27,8 +28,8 @@ bool Options::validate() {
         check_file_valid(faFile);
     }
 
-    if(!hgFile.empty()) {
-        check_file_valid(hgFile);
+    if(!refFile.empty()) {
+        check_file_valid(refFile);
     }
 
     if(!outdir.empty()) {
@@ -43,6 +44,9 @@ bool Options::validate() {
 
     if(kmerKeyLen < 10 || kmerKeyLen > 32)
         error_exit("KMER length (-k) should be between 10 ~ 32, suggest 25");
+
+    if(edThreshold < 0 || edThreshold > 16)
+        error_exit("Edit distance threshold (-e) should be between 0 ~ 16, suggest 3");
 
     if(genomeLimit < 0)
         error_exit("Genome limit (-g) cannot be negative");

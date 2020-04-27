@@ -19,7 +19,7 @@ public:
     // file name of FASTA file
     string faFile;
     // file name of human genome assembly
-    string hgFile;
+    string refFile;
     // output folder name
     string outdir;
     // KMER len
@@ -28,6 +28,8 @@ public:
     int genomeLimit;
     // spacing for KMER
     int kmerSpacing;
+    // edit distance threshold
+    int edThreshold;
 
 };
 

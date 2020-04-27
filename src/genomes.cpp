@@ -38,6 +38,7 @@ void Genomes::run() {
         mNames.push_back(iter->first);
         mSequences.push_back(iter->second);
         mUniqueKmers.push_back(set<string>());
+        mUniqueKeys.push_back(vector<uint64>());
         mGenomeNum++;
     }
 
@@ -58,10 +59,180 @@ void Genomes::makeUniqueKMER() {
         int id = iter->second;
 
         if(id >= 0) {
-            string kmer = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
-            mUniqueKmers[id].insert(kmer);
+            if(!mOptions->refFile.empty())
+                mUniqueKeys[id].push_back(key);
+            else {
+                string kmer = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
+                mUniqueKmers[id].insert(kmer);
+            }
         }
     }
+    // no longer needed
+    mKmerTable.clear();
+    
+    if(!mOptions->refFile.empty())
+        filterReferenceGenome();
+}
+
+void Genomes::filterReferenceGenome() {
+    cerr << "------Remove keys close to reference genome" << endl;
+    cerr << "------Load FASTA: " << mOptions->refFile << endl;
+    FastaReader hg(mOptions->refFile);
+    hg.readAll();
+    map<string, string> contigs = hg.contigs();
+
+    if(contigs.size() == 0)
+        error_exit("Not a valid FASTA file: " + mOptions->refFile);
+
+    map<string, string>::iterator ctgiter;
+    vector<string> allseq;
+    vector<string> allname;
+    for(ctgiter = contigs.begin(); ctgiter != contigs.end() ; ctgiter++) {
+        allseq.push_back(ctgiter->second);
+        allname.push_back(ctgiter->first);
+    }
+
+    // init a table to indicate which key in reference need to be stored
+    int keylen = min(16, mOptions->kmerKeyLen);
+    cerr << "------Calculate unique key coverage in " << keylen << " bp" << endl;
+    
+    size_t flagBufSize = 0x01 << keylen;
+    bool* flagBuf = new bool[flagBufSize];
+    memset(flagBuf, 0, flagBufSize);
+    int blankBits = 64 - 2*keylen;
+
+    uint64 mask = 0;
+    for(int i=0; i<keylen; i++)
+        mask = (mask<<1) + 0x01;
+
+    for(int i=0; i<mGenomeNum; i++) {
+        for(int j=0; j<mUniqueKeys[i].size(); j++) {
+            uint64 key = mUniqueKeys[i][j];
+            uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
+
+            for(int offset = 0; offset <= mOptions->kmerKeyLen - keylen; offset++) {
+                uint64 part = (key & (mask << offset)) >> offset;
+                uint64 rcpart = (rckey & (mask << offset)) >> offset;
+                flagBuf[part] = true;
+                flagBuf[rcpart] = true;
+            }
+        }
+    }
+
+    cerr << "------Index reference genome" << endl;
+
+    unordered_map<uint32, vector<uint16>> keyContigs;
+    unordered_map<uint32, vector<uint32>> keyPositions;
+
+    unordered_map<uint32, vector<uint16>>::iterator contigsIter;
+    unordered_map<uint32, vector<uint32>>::iterator positionsIter;
+
+    for(int c = 0; c < allseq.size(); c++) {
+        cerr << (c+1) << "/" << allseq.size() << ": " << allname[c] <<  endl;
+        string seq = allseq[c];
+        uint32 start = 0;
+        bool valid;
+        uint64 key = Kmer::seq2uint64(seq, start, keylen-1, valid);
+        while(valid == false) {
+            start++;
+            key = Kmer::seq2uint64(seq, start, keylen-1, valid);
+            // reach the tail
+            if(start >= seq.length() - keylen)
+                return;
+        }
+        for(uint32 pos = start; pos < seq.length() - keylen; pos++) {
+            key = (key << 2);
+            switch(seq[pos + keylen-1]) {
+                case 'A': key += 0; break;
+                case 'T': key += 1; break;
+                case 'C': key += 2; break;
+                case 'G': key += 3; break;
+                case 'N':
+                default:
+                    // we have to skip the segments covering this N
+                    pos++;
+                    bool outterBreak = false;
+                    key = Kmer::seq2uint64(seq, pos, keylen-1, valid);
+                    while(valid == false) {
+                        pos++;
+                        key = Kmer::seq2uint64(seq, pos, keylen-1, valid);
+                        // reach the tail
+                        if(pos >= seq.length() - keylen) {
+                            outterBreak = true;
+                            break;
+                        }
+                    }
+                    if(outterBreak)
+                        break;
+
+                    continue;
+            }
+            key = (key << blankBits) >> blankBits;
+
+            uint32 key32 = (uint32)key;
+            if(flagBuf[key32]) {
+                contigsIter = keyContigs.find(key32);
+                if(contigsIter != keyContigs.end()){
+                    contigsIter->second.push_back(c);
+                    keyPositions[key32].push_back(pos);
+                } else {
+                    keyContigs[key32] = vector<uint16>();
+                    keyContigs[key32].push_back(c);
+                    keyPositions[key32] = vector<uint32>();
+                    keyPositions[key32].push_back(pos);
+                }
+            }
+        }
+    }
+
+    cerr << "------Filter KMER keys can be aligned to reference genome" << endl;
+
+    for(int i=0; i<mGenomeNum; i++) {
+        for(int j=0; j<mUniqueKeys[i].size(); j++) {
+            uint64 key = mUniqueKeys[i][j];
+            uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
+
+            bool mapped = false;
+            string keySeq;
+            for(int rc =0; rc<2; rc++) {
+                if(mapped)
+                    break;
+                uint64 key = mUniqueKeys[i][j];
+                if(rc == 1)
+                    key = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
+                
+                for(int offset = 0; offset <= mOptions->kmerKeyLen - keylen; offset++) {
+                    if(mapped)
+                        break;
+                    uint64 part = (key & (mask << offset)) >> offset;
+                    uint32 part32 = (uint32) part;
+                    if(keyContigs.find(part32) != keyContigs.end()) {
+                        keySeq = Kmer::seqFromUint64(part, mOptions->kmerKeyLen);
+
+                        for(int p=0; p<keyPositions[part32].size(); p++) {
+                            int ctg = keyContigs[part32][p];
+                            int compStart = keyPositions[part32][p] - (mOptions->kmerKeyLen - keylen - offset);
+                            if(compStart <0 || compStart + mOptions->kmerKeyLen > allseq[ctg].size())
+                                break;
+
+                            int ed = edit_distance(allseq[ctg].c_str() + compStart, mOptions->kmerKeyLen, keySeq.c_str(), mOptions->kmerKeyLen);
+                            if(ed <= mOptions->edThreshold) {
+                                mapped = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if(!mapped) {
+                mUniqueKmers[i].insert(keySeq);
+            }
+        }
+    }
+
+    delete[] flagBuf;
+
 }
 
 void Genomes::buildKmerTable(bool reversed) {

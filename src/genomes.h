@@ -48,6 +48,7 @@ private:
     int outputKmer(int id, string& path, string& filename);
     void outputGenome(int id, string& path, string& filename);
     string alignToDigits(int val, int digits);
+    void filterReferenceGenome();
 
 private:
     int mGenomeNum;
@@ -55,6 +56,7 @@ private:
     vector<string> mSequences;
     vector<string> mNames;
     vector<set<string>> mUniqueKmers;
+    vector<vector<uint64>> mUniqueKeys;
     // KMER: value
     // If value is negative, means more than one contig hit this KMER
     unordered_map<uint64, int> mKmerTable;

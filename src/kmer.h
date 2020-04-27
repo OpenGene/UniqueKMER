@@ -27,6 +27,7 @@ public:
 
     static uint64 seq2uint64(string& seq, uint32 pos, uint32 len, bool& valid);
     static string seqFromUint64(uint64 key, uint32 len);
+    static uint64 reverseComplement(uint64 key, uint32 len);
     static bool test();
 
 private:

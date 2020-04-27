@@ -168,12 +168,31 @@ uint64 Kmer::seq2uint64(string& seq, uint32 pos, uint32 len, bool& valid) {
     return key;
 }
 
+uint64 Kmer::reverseComplement(uint64 key, uint32 len) {
+    uint64 rc=0;
+    const char compTable[4] = {1,0,3,2}; // A<->T, G<->C
+    int i=0;
+    while(i<len) {
+        char base = key & 0x03;
+        char comp = compTable[base];
+        rc = (rc<<2);
+        key = (key>>2);
+        rc += comp;
+        i++;
+    }
+    return rc;
+}
+
 bool Kmer::test() {
     string seq = "ATCGTCGAAAAATTTTATCG";
+    int len = seq.length();
     bool valid;
-    uint64 key = seq2uint64(seq, 0, 20, valid);
-    string seq2= seqFromUint64(key, 20);
+    uint64 key = seq2uint64(seq, 0, len, valid);
+    uint64 rckey = reverseComplement(key, len);
+    string seq2= seqFromUint64(key, len);
+    string rcseq= seqFromUint64(rckey, len);
     cerr << seq << endl;
     cerr << seq2 << endl;
+    cerr << rcseq << endl;
     return seq ==  seq2;
 }
