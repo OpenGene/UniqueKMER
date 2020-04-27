@@ -47,9 +47,8 @@ void Genomes::run() {
     buildKmerTable(false);
     cerr << "------Reverse <<<"<<endl;
     buildKmerTable(true);
-    cerr << "------Find unique KMERs...";
+    cerr << "------Find unique KMERs";
     makeUniqueKMER();
-    cerr << "done." << endl;
 }
 
 void Genomes::makeUniqueKMER() {
@@ -93,7 +92,7 @@ void Genomes::filterReferenceGenome() {
     }
 
     // init a table to indicate which key in reference need to be stored
-    int keylen = min(16, mOptions->kmerKeyLen);
+    int keylen = min(14, mOptions->kmerKeyLen);
     cerr << "------Calculate unique key coverage in " << keylen << " bp" << endl;
     
     size_t flagBufSize = 1L << (2*keylen);
@@ -102,7 +101,7 @@ void Genomes::filterReferenceGenome() {
     int blankBits = 64 - 2*keylen;
 
     uint64 mask = 0;
-    for(int i=0; i<keylen; i++)
+    for(int i=0; i<keylen*2; i++)
         mask = (mask<<1) + 0x01;
 
     for(int i=0; i<mGenomeNum; i++) {
@@ -111,8 +110,9 @@ void Genomes::filterReferenceGenome() {
             uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
 
             for(int offset = 0; offset <= mOptions->kmerKeyLen - keylen; offset++) {
-                uint64 part = (key & (mask << offset)) >> offset;
-                uint64 rcpart = (rckey & (mask << offset)) >> offset;
+                int shift = offset * 2;
+                uint64 part = (key & (mask << shift)) >> shift;
+                uint64 rcpart = (rckey & (mask << shift)) >> shift;
                 flagBuf[part] = true;
                 flagBuf[rcpart] = true;
             }
@@ -191,30 +191,47 @@ void Genomes::filterReferenceGenome() {
         for(int j=0; j<mUniqueKeys[i].size(); j++) {
             uint64 key = mUniqueKeys[i][j];
             uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
+            string keySeq = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
+            string rckeySeq = Kmer::seqFromUint64(rckey, mOptions->kmerKeyLen);
+
+            //bool debug = (keySeq ==  "GGGAAAAAAGCCGCGCGGGGGCGCC");
 
             bool mapped = false;
-            for(int rc =0; rc<2; rc++) {
+            for(int rc =0; rc<1; rc++) {
                 if(mapped)
                     break;
-                uint64 key = mUniqueKeys[i][j];
+                uint64 curkey = key;
                 if(rc == 1)
-                    key = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
+                    curkey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
                 
                 for(int offset = 0; offset <= mOptions->kmerKeyLen - keylen; offset++) {
                     if(mapped)
                         break;
-                    uint64 part = (key & (mask << offset)) >> offset;
+                    int shift = offset*2;
+                    uint64 part = (curkey & (mask << shift)) >> shift;
+                    //if(debug)
+                    //    cerr << Kmer::seqFromUint64(part, keylen)<<endl;
                     uint32 part32 = (uint32) part;
                     if(keyContigs.find(part32) != keyContigs.end()) {
-                        string keySeq = Kmer::seqFromUint64(part, mOptions->kmerKeyLen);
-
+                        //if(debug)
+                        //    cerr << " hit"  << endl;
                         for(int p=0; p<keyPositions[part32].size(); p++) {
                             int ctg = keyContigs[part32][p];
                             int compStart = keyPositions[part32][p] - (mOptions->kmerKeyLen - keylen - offset);
                             if(compStart <0 || compStart + mOptions->kmerKeyLen > allseq[ctg].size())
                                 break;
 
-                            int ed = edit_distance(allseq[ctg].c_str() + compStart, mOptions->kmerKeyLen, keySeq.c_str(), mOptions->kmerKeyLen);
+                            /*if(debug) {
+                                cerr << "compStart: " << compStart <<  endl;
+                                cerr << "offset: " << offset <<  endl;
+                                cerr << "p: " << p <<  endl;
+                            }*/
+
+                            int ed = 0;
+                            if(rc == 1)
+                                ed = edit_distance(allseq[ctg].c_str() + compStart, mOptions->kmerKeyLen, rckeySeq.c_str(), mOptions->kmerKeyLen);
+                            else
+                                ed =  edit_distance(allseq[ctg].c_str() + compStart, mOptions->kmerKeyLen, keySeq.c_str(), mOptions->kmerKeyLen);
                             if(ed <= mOptions->edThreshold) {
                                 mapped = true;
                                 break;
@@ -238,7 +255,6 @@ void Genomes::filterReferenceGenome() {
 void Genomes::buildKmerTable(bool reversed) {
     int keylen = mOptions->kmerKeyLen;
     int blankBits = 64 - 2*keylen;
-    const int polyATailLen = 28;
     bool valid = true;
     for(uint32 i=0; i<mNames.size(); i++) {
         string seq = mSequences[i];
@@ -255,17 +271,16 @@ void Genomes::buildKmerTable(bool reversed) {
         if(seq.length() < keylen)
             continue;
         // first calculate the first keylen-1 kmer
-        // skip the polyA tail
         uint32 start = 0;
         uint64 key = Kmer::seq2uint64(seq, start, keylen-1, valid);
         while(valid == false) {
             start++;
             key = Kmer::seq2uint64(seq, start, keylen-1, valid);
             // reach the tail
-            if(start >= seq.length() - keylen - polyATailLen)
+            if(start >= seq.length() - keylen)
                 return;
         }
-        for(uint32 pos = start; pos < seq.length() - keylen - polyATailLen; pos++) {
+        for(uint32 pos = start; pos < seq.length() - keylen; pos++) {
             key = (key << 2);
             switch(seq[pos + keylen-1]) {
                 case 'A':
@@ -290,7 +305,7 @@ void Genomes::buildKmerTable(bool reversed) {
                         pos++;
                         key = Kmer::seq2uint64(seq, pos, keylen-1, valid);
                         // reach the tail
-                        if(pos >= seq.length() - keylen - polyATailLen) {
+                        if(pos >= seq.length() - keylen) {
                             outterBreak = true;
                             break;
                         }
