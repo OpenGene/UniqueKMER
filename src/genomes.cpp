@@ -12,7 +12,7 @@ const int BLOOM_FILTER_LENGTH = (1<<29);
 
 Genomes::Genomes(string faFile, Options* opt)
 {
-    cerr << "------Load FASTA: " << faFile << endl;
+    cerr << "--- Load FASTA: " << faFile << endl;
     mFastaReader = new FastaReader(faFile);
     mOptions = opt;
     mFastaReader->readAll();
@@ -42,12 +42,12 @@ void Genomes::run() {
         mGenomeNum++;
     }
 
-    cerr << "------Build KMER table" << endl;
-    cerr << "------Forward >>>"<<endl;
+    cerr << "--- Build KMER table" << endl;
+    cerr << "--- Forward >>>"<<endl;
     buildKmerTable(false);
-    cerr << "------Reverse <<<"<<endl;
+    cerr << "--- Reverse <<<"<<endl;
     buildKmerTable(true);
-    cerr << "------Find unique KMERs";
+    cerr << "--- Find unique KMERs"<<endl;
     makeUniqueKMER();
 }
 
@@ -74,8 +74,8 @@ void Genomes::makeUniqueKMER() {
 }
 
 void Genomes::filterReferenceGenome() {
-    cerr << "------Remove keys close to reference genome" << endl;
-    cerr << "------Load FASTA: " << mOptions->refFile << endl;
+    cerr << "--- Prepare to remove KMER keys that can be mapped to reference genome" << endl;
+    cerr << "--- Load reference FASTA: " << mOptions->refFile << endl;
     FastaReader hg(mOptions->refFile);
     hg.readAll();
     map<string, string> contigs = hg.contigs();
@@ -93,7 +93,7 @@ void Genomes::filterReferenceGenome() {
 
     // init a table to indicate which key in reference need to be stored
     int keylen = min(14, mOptions->kmerKeyLen);
-    cerr << "------Calculate unique key coverage in " << keylen << " bp" << endl;
+    cerr << "--- Calculate unique key coverage in " << keylen << " bp" << endl;
     
     size_t flagBufSize = 1L << (2*keylen);
     bool* flagBuf = new bool[flagBufSize];
@@ -119,7 +119,7 @@ void Genomes::filterReferenceGenome() {
         }
     }
 
-    cerr << "------Index reference genome" << endl;
+    cerr << "--- Index reference genome" << endl;
 
     unordered_map<uint32, vector<uint16>> keyContigs;
     unordered_map<uint32, vector<uint32>> keyPositions;
@@ -185,9 +185,10 @@ void Genomes::filterReferenceGenome() {
         }
     }
 
-    cerr << "------Filter KMER keys can be aligned to reference genome" << endl;
+    cerr << "--- Filter KMER keys that can be aligned to reference genome" << endl;
 
     for(int i=0; i<mGenomeNum; i++) {
+        cerr << "Filtering " << (i+1) << "/" << mGenomeNum << ": " << mNames[i] <<  endl;
         for(int j=0; j<mUniqueKeys[i].size(); j++) {
             uint64 key = mUniqueKeys[i][j];
             uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
@@ -415,7 +416,7 @@ void Genomes::output() {
 
     index<<"<HTML><head><title>UniqueKMER Report</title></head><div><ul>" << endl;
 
-    cerr << "------Output unique KMER and genome FASTA files" << endl;
+    cerr << "--- Output unique KMER and genome FASTA files" << endl;
     for(int i=0; i<mGenomeNum; i++) {
         int contigSize = mSequences[i].size();
         string folder = to_string(contigSize % 100);
@@ -454,7 +455,7 @@ void Genomes::output() {
         index << " </li>" << endl;
         
         outputGenome(i, path, genomeFilename);
-        cerr << (i+1) << "/" << mGenomeNum << ": " << mNames[i] << "." << " unique: " << count << endl;
+        cerr << "Output " << (i+1) << "/" << mGenomeNum << ": " << mNames[i] << "." << " unique: " << count << endl;
     }
 
     index << "</ul></div></body></html>" << endl;
