@@ -5,6 +5,7 @@
 #include <sstream>
 #include <memory.h>
 #include <math.h>
+#include <omp.h> 
 #include "sequence.h"
 
 const int REPETITIVE_THRESHOLD = 100;
@@ -103,6 +104,7 @@ void Genomes::filterReferenceGenome() {
     for(int i=0; i<keylen*2; i++)
         mask = (mask<<1) + 0x01;
 
+    #pragma omp parallel for
     for(int i=0; i<mGenomeNum; i++) {
         for(int j=0; j<mUniqueKeys[i].size(); j++) {
             uint64 key = mUniqueKeys[i][j];
@@ -184,8 +186,12 @@ void Genomes::filterReferenceGenome() {
 
     cerr << "--- Filter KMER keys that can be aligned to reference genome" << endl;
 
+    atomic_int finished;
+    finished=0;
+    #pragma omp parallel for
     for(int i=0; i<mGenomeNum; i++) {
-        cerr << "Filtering " << (i+1) << "/" << mGenomeNum << ": " << mNames[i] <<  endl;
+        cerr << "Filtering " << (finished+1) << "/" << mGenomeNum << ": " << mNames[i] <<  endl;
+        finished++;
         for(int j=0; j<mUniqueKeys[i].size(); j++) {
             uint64 key = mUniqueKeys[i][j];
             uint64 rckey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
@@ -443,6 +449,12 @@ void Genomes::output() {
     index<<"<div><ul>" << endl;
 
     cerr << "--- Output unique KMER and genome FASTA files" << endl;
+    vector<int> counts(mGenomeNum);
+    vector<string> pathes(mGenomeNum);
+    vector<string> kmerFilenames(mGenomeNum);
+    vector<string> genomeFilenames(mGenomeNum);
+
+    // generate folders
     for(int i=0; i<mGenomeNum; i++) {
         int contigSize = mSequences[i].size();
         string folder = to_string(contigSize % 100);
@@ -466,22 +478,44 @@ void Genomes::output() {
         string kmerFilename = str_keep_valid_filename(mNames[i]) + ".kmer.fasta";
         string genomeFilename = str_keep_valid_filename(mNames[i]) + ".fasta";
 
+        pathes[i]=path;
+        kmerFilenames[i]=kmerFilename;
+        genomeFilenames[i]=genomeFilename;
+    }
+
+    // process and  output files
+    atomic_int finished;
+    finished=0;
+    #pragma omp parallel for
+    for(int i=0; i<mGenomeNum; i++) {
+        string kmerFilename = kmerFilenames[i];
+        string genomeFilename = genomeFilenames[i];
+        string path = pathes[i];
+        counts[i] = outputKmer(i, path, kmerFilename);
+        outputGenome(i, path, genomeFilename);
+        cerr << "Output " << (finished+1) << "/" << mGenomeNum << ": " << mNames[i] << "." << " unique: " << counts[i] << endl;
+        finished++;
+    }
+
+    // output index.html
+    for(int i=0; i<mGenomeNum; i++) {
+        int contigSize = mSequences[i].size();
+        string folder = to_string(contigSize % 100);
+        string kmerFilename = kmerFilenames[i];
+        string genomeFilename = genomeFilenames[i];
+        string path = pathes[i];
+        int count = counts[i];
+
         string color;
-        int unique = mUniqueKmers[i].size();
-        if(unique  > 0)
+        if(count  > 0)
             color = "blue";
         else
             color = "#333333";
-
-        int count = outputKmer(i, path, kmerFilename);
 
         index << "<li>" <<  mNames[i] <<  " (" << count << " unique)";
         index << "  &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << kmerFilename << "'>KMER file</a>";
         index << "&nbsp; | &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << genomeFilename << "'>Genome file</a>";
         index << " </li>" << endl;
-        
-        outputGenome(i, path, genomeFilename);
-        cerr << "Output " << (i+1) << "/" << mGenomeNum << ": " << mNames[i] << "." << " unique: " << count << endl;
     }
 
     index << "</ul></div></body></html>" << endl;
