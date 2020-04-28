@@ -7,7 +7,7 @@
 #include <math.h>
 #include "sequence.h"
 
-const int REPETITIVE_THRESHOLD = 255;
+const int REPETITIVE_THRESHOLD = 100;
 
 Genomes::Genomes(string faFile, Options* opt)
 {
