@@ -9,6 +9,7 @@
 
 // we use 512M memory
 const int BLOOM_FILTER_LENGTH = (1<<29);
+const int REPETITIVE_THRESHOLD = 255;
 
 Genomes::Genomes(string faFile, Options* opt)
 {
@@ -96,8 +97,8 @@ void Genomes::filterReferenceGenome() {
     cerr << "--- Calculate unique key coverage in " << keylen << " bp" << endl;
     
     size_t flagBufSize = 1L << (2*keylen);
-    bool* flagBuf = new bool[flagBufSize];
-    memset(flagBuf, 0, flagBufSize * sizeof(bool));
+    uint8* flagBuf = new uint8[flagBufSize];
+    memset(flagBuf, 0, flagBufSize * sizeof(uint8));
     int blankBits = 64 - 2*keylen;
 
     uint64 mask = 0;
@@ -113,19 +114,16 @@ void Genomes::filterReferenceGenome() {
                 int shift = offset * 2;
                 uint64 part = (key & (mask << shift)) >> shift;
                 uint64 rcpart = (rckey & (mask << shift)) >> shift;
-                flagBuf[part] = true;
-                flagBuf[rcpart] = true;
+                flagBuf[part] = 1;
+                flagBuf[rcpart] = 1;
             }
         }
     }
 
     cerr << "--- Index reference genome" << endl;
 
-    unordered_map<uint32, vector<uint16>> keyContigs;
-    unordered_map<uint32, vector<uint32>> keyPositions;
-
-    unordered_map<uint32, vector<uint16>>::iterator contigsIter;
-    unordered_map<uint32, vector<uint32>>::iterator positionsIter;
+    unordered_map<uint32, vector<ContigPos>> keyCP;
+    unordered_map<uint32, vector<ContigPos>>::iterator cpIter;
 
     for(int c = 0; c < allseq.size(); c++) {
         cerr << (c+1) << "/" << allseq.size() << ": " << allname[c] <<  endl;
@@ -170,16 +168,17 @@ void Genomes::filterReferenceGenome() {
             key = (key << blankBits) >> blankBits;
 
             uint32 key32 = (uint32)key;
-            if(flagBuf[key32]) {
-                contigsIter = keyContigs.find(key32);
-                if(contigsIter != keyContigs.end()){
-                    contigsIter->second.push_back(c);
-                    keyPositions[key32].push_back(pos);
+            if(flagBuf[key32] > 0 && flagBuf[key32]!= REPETITIVE_THRESHOLD) {
+                flagBuf[key32]++;
+                // this is a repetitive key, ignore and clear it
+                if(flagBuf[key32]== REPETITIVE_THRESHOLD) {
+                    keyCP.erase(key32);
+                }  else if (flagBuf[key32]==1) {
+                    // the first
+                    keyCP[key32] = vector<ContigPos>();
+                    keyCP[key32].push_back(ContigPos(c, pos));
                 } else {
-                    keyContigs[key32] = vector<uint16>();
-                    keyContigs[key32].push_back(c);
-                    keyPositions[key32] = vector<uint32>();
-                    keyPositions[key32].push_back(pos);
+                    keyCP[key32].push_back(ContigPos(c, pos));
                 }
             }
         }
@@ -198,27 +197,51 @@ void Genomes::filterReferenceGenome() {
             //bool debug = (keySeq ==  "GGGAAAAAAGCCGCGCGGGGGCGCC");
 
             bool mapped = false;
-            for(int rc =0; rc<1; rc++) {
+            for(int rc =0; rc<2; rc++) {
                 if(mapped)
                     break;
                 uint64 curkey = key;
                 if(rc == 1)
                     curkey = Kmer::reverseComplement(key, mOptions->kmerKeyLen);
                 
+                int partHits = 0;
+                bool repetitiveMode =  false;
                 for(int offset = 0; offset <= mOptions->kmerKeyLen - keylen; offset++) {
                     if(mapped)
                         break;
                     int shift = offset*2;
                     uint64 part = (curkey & (mask << shift)) >> shift;
                     //if(debug)
-                    //    cerr << Kmer::seqFromUint64(part, keylen)<<endl;
+                    // cerr << Kmer::seqFromUint64(part, keylen)<<endl;
                     uint32 part32 = (uint32) part;
-                    if(keyContigs.find(part32) != keyContigs.end()) {
+                    if(flagBuf[part32] > 1) {
+                        partHits++;
+                        // all parts hit reference genome, mark it as mapped
+                        if(partHits >= mOptions->kmerKeyLen - keylen + 1 && repetitiveMode)  {
+                            mapped = true;
+                            break;
+                        }
+                    }
+                    // repetitive KMER of reference genome, skip them
+                    if(flagBuf[part32] == REPETITIVE_THRESHOLD) {
+                        repetitiveMode = true;
+                        // all parts hit reference genome, mark it as mapped
+                        if(partHits >= mOptions->kmerKeyLen - keylen + 1) {
+                            mapped = true;
+                            break;
+                        } else
+                            continue;
+                    }
+                    // hit the reference, do a mapping
+                    if(flagBuf[part32] > 1) {
                         //if(debug)
-                        //    cerr << " hit"  << endl;
-                        for(int p=0; p<keyPositions[part32].size(); p++) {
-                            int ctg = keyContigs[part32][p];
-                            int compStart = keyPositions[part32][p] - (mOptions->kmerKeyLen - keylen - offset);
+                        // cerr << " hit"  << endl;
+                        vector<ContigPos>& cplist = keyCP[part32];
+                        for(int p=0; p<cplist.size(); p++) {
+                            ContigPos cp = cplist[p];
+                            uint32 pos = cp.position;
+                            uint16 ctg = cp.contig;
+                            int compStart = pos - (mOptions->kmerKeyLen - keylen - offset);
                             if(compStart <0 || compStart + mOptions->kmerKeyLen > allseq[ctg].size())
                                 break;
 

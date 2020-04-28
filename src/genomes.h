@@ -33,6 +33,18 @@ public:
     uint32 ed; // edit distance
 };
 
+#pragma pack(2) 
+// if contig is -1, means this is a dupe entry, and position will be the position in the dupList
+struct ContigPos{
+    ContigPos(uint16 ctg, uint32 pos) {
+        contig = ctg;
+        position  = pos;
+    }
+    uint16 contig;
+    uint32 position;
+};
+#pragma pack() 
+
 class Genomes
 {
 public:
