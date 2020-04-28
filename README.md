@@ -9,9 +9,11 @@ The output unique KMER file and Genome file can be used for fastv: https://githu
 
 # get this tool
 ```shell
-git clone https://github.com/OpenGene/UniqueKMER.gi
+git clone https://github.com/OpenGene/UniqueKMER.git
 cd UniqueKMER
 make
+# install to system (may need sudo)
+make install
 ```
 # simple example:
 ```shell
@@ -38,7 +40,6 @@ uniquekmer -f test.fasta -s 2
 
 options:
 ```shel
-options:
   -f, --fasta            FASTA input file name (string)
   -o, --outdir           Directory for output. Default is unique_kmers in the current directory. (string [=unique_kmers])
   -k, --kmer             The length k of KMER (10~32), default 25 (int [=25])
