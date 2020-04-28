@@ -73,9 +73,6 @@ private:
     // If value is negative, means more than one contig hit this KMER
     unordered_map<uint64, int> mKmerTable;
     Options* mOptions;
-    long mHitCount;
-    long mMissedCount;
-    char* mBloomFilterArray;
 };
 
 
