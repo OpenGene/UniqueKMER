@@ -7,6 +7,10 @@ This tool accepts the input of a FASTA file consisting of many contigs, and extr
 
 The output unique KMER file and Genome file can be used for fastv: https://github.com/OpenGene/fastv, which is an ultra-fast tool to identify and visualize microbial sequences from sequencing data.
 
+# what does UniqueKMER output?
+This tool outputs a folder (folder name can be specified by `-o/--outdir`), which contains a `index.html` and a subfolder `genomes_kmers`. The subfolder `genomes_kmers` contains a KMER file and a Genome file for each contig, both in FASTA format. You can open the `index.html` with any browser, then click on the contig names to find its KMER file and Genome file.
+* a small example: http://opengene.org/uniquekmer/test/index.html
+
 # get this tool
 ```shell
 git clone https://github.com/OpenGene/UniqueKMER.git
