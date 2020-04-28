@@ -280,6 +280,7 @@ void Genomes::filterReferenceGenome() {
 
     delete[] flagBuf;
     delete hg;
+    keyCP.clear();
 
     // change to string
     for(int i=0; i<mGenomeNum; i++) {
