@@ -5,7 +5,8 @@
 #include <sstream>
 #include <memory.h>
 #include <math.h>
-#include <omp.h> 
+#include <omp.h>
+#include <atomic>
 #include "sequence.h"
 
 const int REPETITIVE_THRESHOLD = 100;
