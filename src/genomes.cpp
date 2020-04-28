@@ -40,6 +40,7 @@ void Genomes::run() {
         mSequences.push_back(iter->second);
         mUniqueKmers.push_back(set<string>());
         mUniqueKeys.push_back(vector<uint64>());
+        mFilteredUniqueKeys.push_back(vector<uint64>());
         mGenomeNum++;
     }
 
@@ -77,9 +78,9 @@ void Genomes::makeUniqueKMER() {
 void Genomes::filterReferenceGenome() {
     cerr << "--- Prepare to remove KMER keys that can be mapped to reference genome" << endl;
     cerr << "--- Load reference FASTA: " << mOptions->refFile << endl;
-    FastaReader hg(mOptions->refFile);
-    hg.readAll();
-    map<string, string> contigs = hg.contigs();
+    FastaReader* hg = new FastaReader(mOptions->refFile);
+    hg->readAll();
+    map<string, string> contigs = hg->contigs();
 
     if(contigs.size() == 0)
         error_exit("Not a valid FASTA file: " + mOptions->refFile);
@@ -271,13 +272,23 @@ void Genomes::filterReferenceGenome() {
             }
 
             if(!mapped) {
-                string keySeq = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
-                mUniqueKmers[i].insert(keySeq);
+                mFilteredUniqueKeys[i].push_back(key);
             }
         }
+        mUniqueKeys[i].clear();
     }
 
     delete[] flagBuf;
+    delete hg;
+
+    // change to string
+    for(int i=0; i<mGenomeNum; i++) {
+        for(int j=0; j<mFilteredUniqueKeys[i].size(); j++) {
+            uint64 key = mFilteredUniqueKeys[i][j];
+            string keySeq = Kmer::seqFromUint64(key, mOptions->kmerKeyLen);
+            mUniqueKmers[i].insert(keySeq);
+        }
+    }
 
 }
 

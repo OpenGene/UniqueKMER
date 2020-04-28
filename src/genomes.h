@@ -69,6 +69,7 @@ private:
     vector<string> mNames;
     vector<set<string>> mUniqueKmers;
     vector<vector<uint64>> mUniqueKeys;
+    vector<vector<uint64>> mFilteredUniqueKeys;
     // KMER: value
     // If value is negative, means more than one contig hit this KMER
     unordered_map<uint64, int> mKmerTable;
