@@ -8,7 +8,6 @@ This tool accepts the input of a FASTA file consisting of many contigs, and extr
 The output unique KMER file and Genome file can be used for fastv: https://github.com/OpenGene/fastv, which is an ultra-fast tool to identify and visualize microbial sequences from sequencing data.
 
 # get this tool
-## compile from source
 ```shell
 git clone https://github.com/OpenGene/UniqueKMER.gi
 cd UniqueKMER
@@ -21,17 +20,17 @@ uniquekmer -f test.fasta
 You can get the test.fasta from: http://opengene.org/test.fasta
 
 # more examples
-## set the KMER key length
-```
+### set the KMER key length
+```shell
 # 16-mer (i.e. ATCGATCGATCGATCG...)
 uniquekmer -f test.fasta -k 16
 ```
-## filter the KMER keys that can be mapped to a reference genome (i.e. human genome)
+### filter the KMER keys that can be mapped to a reference genome (i.e. human genome)
 ```shell
 # KMER sequences that can be mapped to hg38 with `edit distance <=2`  will be removed
 uniquekmer -f test.fasta -r hg38.fasta -e 2
 ```
-## set the spacing to avoid many continuous KMER keys
+### set the spacing to avoid many continuous KMER keys
 ```shell
 # the spacing will be 2, which means if `key(pos)` is stored, then `key(pos+1)`  and `key(pos+2)` will be skipped
 uniquekmer -f test.fasta -s 2
