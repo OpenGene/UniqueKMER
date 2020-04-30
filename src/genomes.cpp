@@ -384,12 +384,15 @@ string Genomes::alignToDigits(int val, int digits) {
     return s;
 }
 
-int Genomes::outputKmer(int id, string& path, string& kmerFilename) {
+string Genomes::outputKmer(int id, string& path, string& kmerFilename, int& count) {
     ofstream kmerofs;
     kmerofs.open(joinpath(path, kmerFilename));
 
     map<int, string> posSeq;
     set<string>::iterator setiter;
+
+    string kmerStr;
+    kmerStr += ">" + mNames[id] + "\n";
 
     if(mUniqueKmers[id].size() < mSequences[id].length()/300) {
         for(setiter=mUniqueKmers[id].begin(); setiter!=mUniqueKmers[id].end(); setiter++) {
@@ -416,7 +419,7 @@ int Genomes::outputKmer(int id, string& path, string& kmerFilename) {
     int digits = ceil(log10(mSequences[id].length()+1.0));
 
     int last = -1;
-    int count = 0;
+    count = 0;
     map<int, string>::iterator iter;
     for(iter = posSeq.begin(); iter != posSeq.end(); iter++) {
         int pos = iter->first;
@@ -424,12 +427,13 @@ int Genomes::outputKmer(int id, string& path, string& kmerFilename) {
             continue;
         kmerofs << ">p" << alignToDigits(pos, digits) << endl;
         kmerofs << iter->second << endl;
+        kmerStr += iter->second + "\n";
         last = pos;
         count++;
     }
     kmerofs.close();
 
-    return count;
+    return kmerStr;
 }
 
 void Genomes::outputGenome(int id, string& path, string& genomeFilename) {
@@ -454,6 +458,9 @@ extern string command;
 void Genomes::output() {
     ofstream index;
     index.open( joinpath(mOptions->outdir, "index.html"), ifstream::out);
+    ofstream allkmers;
+    allkmers.open( joinpath(mOptions->outdir, "allkmers.fasta"), ifstream::out);
+
 
     index<<"<HTML><head><title>UniqueKMER Report</title></head><body>" <<  endl;
     index<<"<h1>Unique KMER</h1>"<<endl;
@@ -466,6 +473,7 @@ void Genomes::output() {
     vector<string> pathes(mGenomeNum);
     vector<string> kmerFilenames(mGenomeNum);
     vector<string> genomeFilenames(mGenomeNum);
+    vector<string> kmerStrings(mGenomeNum);
 
     // generate folders
     for(int i=0; i<mGenomeNum; i++) {
@@ -504,13 +512,15 @@ void Genomes::output() {
         string kmerFilename = kmerFilenames[i];
         string genomeFilename = genomeFilenames[i];
         string path = pathes[i];
-        counts[i] = outputKmer(i, path, kmerFilename);
+        int count;
+        kmerStrings[i] = outputKmer(i, path, kmerFilename, count);
+        counts[i] = count;
         outputGenome(i, path, genomeFilename);
         cerr << "Output " << (finished+1) << "/" << mGenomeNum << ": " << mNames[i] << "." << " unique: " << counts[i] << endl;
         finished++;
     }
 
-    // output index.html
+    // output index.html and allkmers.fasta
     for(int i=0; i<mGenomeNum; i++) {
         int contigSize = mSequences[i].size();
         string folder = to_string(contigSize % 100);
@@ -529,9 +539,13 @@ void Genomes::output() {
         index << "  &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << kmerFilename << "'>KMER file</a>";
         index << "&nbsp; | &nbsp;<a style='color:" << color << "' href='genomes_kmers/" << folder << "/" << genomeFilename << "'>Genome file</a>";
         index << " </li>" << endl;
+
+        if(count>0)
+            allkmers << kmerStrings[i];
     }
 
     index << "</ul></div></body></html>" << endl;
 
     index.close();
+    allkmers.close();
 }

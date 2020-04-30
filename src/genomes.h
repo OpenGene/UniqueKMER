@@ -57,7 +57,7 @@ private:
     void buildKmerTable(bool reversed);
     void addKmer(uint64 key, int id, bool reversed);
     void makeUniqueKMER();
-    int outputKmer(int id, string& path, string& filename);
+    string outputKmer(int id, string& path, string& filename, int& count);
     void outputGenome(int id, string& path, string& filename);
     string alignToDigits(int val, int digits);
     void filterReferenceGenome();
