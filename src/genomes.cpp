@@ -9,7 +9,7 @@
 #include <atomic>
 #include "sequence.h"
 
-const int REPETITIVE_THRESHOLD = 100;
+const int REPETITIVE_THRESHOLD = 20;
 
 Genomes::Genomes(string faFile, Options* opt)
 {
@@ -458,8 +458,8 @@ extern string command;
 void Genomes::output() {
     ofstream index;
     index.open( joinpath(mOptions->outdir, "index.html"), ifstream::out);
-    ofstream allkmers;
-    allkmers.open( joinpath(mOptions->outdir, "allkmers.fasta"), ifstream::out);
+    ofstream kmercollection;
+    kmercollection.open( joinpath(mOptions->outdir, "kmercollection.fasta"), ifstream::out);
 
 
     index<<"<HTML><head><title>UniqueKMER Report</title></head><body>" <<  endl;
@@ -520,7 +520,7 @@ void Genomes::output() {
         finished++;
     }
 
-    // output index.html and allkmers.fasta
+    // output index.html and kmercollection.fasta
     for(int i=0; i<mGenomeNum; i++) {
         int contigSize = mSequences[i].size();
         string folder = to_string(contigSize % 100);
@@ -541,11 +541,11 @@ void Genomes::output() {
         index << " </li>" << endl;
 
         if(count>0)
-            allkmers << kmerStrings[i];
+            kmercollection << kmerStrings[i];
     }
 
     index << "</ul></div></body></html>" << endl;
 
     index.close();
-    allkmers.close();
+    kmercollection.close();
 }
