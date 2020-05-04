@@ -16,12 +16,24 @@ BIN_TARGET := ${TARGET}
 
 CXX ?= g++
 CXXFLAGS := -std=c++11 -Xpreprocessor -fopenmp -g -O3 -I${DIR_INC} $(foreach includedir,$(INCLUDE_DIRS),-I$(includedir)) ${CXXFLAGS}
+
+UNAME_S := $(shell uname -s)
+
+ifeq ($(UNAME_S),Darwin)
 LIBS := -lz -lpthread -lomp
+else
+LIBS := -lz -lpthread
+endif
+
 LD_FLAGS := $(foreach librarydir,$(LIBRARY_DIRS),-L$(librarydir)) $(LIBS) $(LD_FLAGS)
 
 
 ${BIN_TARGET}:${OBJ}
+ifeq ($(UNAME_S),Darwin)
 	$(CXX) $(OBJ) -o $@ $(LD_FLAGS)
+else
+	$(CXX) $(OBJ) -o $@ $(LD_FLAGS) -fopenmp
+endif
 
 ${DIR_OBJ}/%.o:${DIR_SRC}/%.cpp make_obj_dir
 	$(CXX) -c $< -o $@ $(CXXFLAGS)
