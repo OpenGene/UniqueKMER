@@ -15,7 +15,7 @@ mutex logmtx;
 int main(int argc, char* argv[]){
     // display version info if no argument is given
     if(argc == 1) {
-        cerr << "UniqueKMER: Generate unique KMERs for every contig in a FASTA file." << endl << "version " << UNIQUEKMER_VER << endl;
+        cerr << "UniqueKMER: Generate unique k-mers for every contig in a FASTA file." << endl << "version " << UNIQUEKMER_VER << endl;
     }
     if (argc == 2 && strcmp(argv[1], "test")==0){
         UnitTest tester;
@@ -30,11 +30,11 @@ int main(int argc, char* argv[]){
     cmdline::parser cmd;
     cmd.add<string>("fasta", 'f', "FASTA input file name", true, "");
     cmd.add<string>("outdir", 'o', "Directory for output. Default is unique_kmers in the current directory.", false, "unique_kmers");
-    cmd.add<int>("kmer", 'k', "The length k of KMER (10~32), default 25", false, 25); 
+    cmd.add<int>("kmer", 'k', "The length k of k-mer (10~32), default 25", false, 25); 
     cmd.add<int>("spacing", 's', "If a key with POS is recorded, then skip [POS+1...POS+spacing] to avoid too compact result (0~100). default 0 means no skipping.", false, 0); 
     cmd.add<int>("genome_limit", 'g', "Process up to genome_limit genomes in the FASTA input file. Default 0 means no limit. This option is for DEBUG.", false, 0); 
-    cmd.add<string>("ref", 'r', "Reference genome FASTA file name. Specify this only when you want to filter out the unique KMER that can be mapped to reference genome.", false, "");
-    cmd.add<int>("edit_distance", 'e', "KMER mapped to reference genome with edit distance <= edit_distance will be removed (0~16). 3 for default.", false, 3);
+    cmd.add<string>("ref", 'r', "Reference genome FASTA file name. Specify this only when you want to filter out the unique k-mer that can be mapped to reference genome.", false, "");
+    cmd.add<int>("edit_distance", 'e', "k-mer mapped to reference genome with edit distance <= edit_distance will be removed (0~16). 3 for default.", false, 3);
 
     cmd.parse_check(argc, argv);
 
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
     
     time_t t2 = time(NULL);
 
-    cerr << endl << "Please find results (index.html, KMER/Genome files) in folder: " << opt.outdir << endl;
+    cerr << endl << "Please find results (index.html, k-mer/Genome files) in folder: " << opt.outdir << endl;
     cerr << endl << command << endl;
     cerr << "uniquekmer v" << UNIQUEKMER_VER << ", time used: " << (t2)-t1 << " seconds" << endl;
 
