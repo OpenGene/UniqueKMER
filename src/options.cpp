@@ -42,8 +42,8 @@ bool Options::validate() {
             error_exit("Not a directory: " + outdir);
     }
 
-    if(kmerKeyLen < 10 || kmerKeyLen > 32)
-        error_exit("KMER length (-k) should be between 10 ~ 32, suggest 25");
+    if(kmerKeyLen < 3 || kmerKeyLen > 32)
+        error_exit("KMER length (-k) should be between 3 ~ 32, suggest 25");
 
     if(edThreshold < 0 || edThreshold > 16)
         error_exit("Edit distance threshold (-e) should be between 0 ~ 16, suggest 3");

@@ -65,7 +65,7 @@ options:
 ```shel
   -f, --fasta            FASTA input file name (string)
   -o, --outdir           Directory for output. Default is unique_kmers in the current directory. (string [=unique_kmers])
-  -k, --kmer             The length k of k-mer (10~32), default 25 (int [=25])
+  -k, --kmer             The length k of k-mer (3~32), default 25 (int [=25])
   -s, --spacing          If a key with POS is recorded, then skip [POS+1...POS+spacing] to avoid too compact result (0~100). default 0 means no skipping. (int [=0])
   -g, --genome_limit     Process up to genome_limit genomes in the FASTA input file. Default 0 means no limit. This option is for DEBUG. (int [=0])
   -r, --ref              Reference genome FASTA file name. Specify this only when you want to filter out the unique k-mer that can be mapped to reference genome. (string [=])
