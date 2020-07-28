@@ -32,6 +32,8 @@ void Genomes::run() {
     map<string, string>::iterator iter;
     mGenomeNum = 0;
     for(iter = genomes.begin(); iter != genomes.end() ; iter++) {
+        if(iter->second.empty())
+            continue;
         if(mOptions->genomeLimit>0 && mGenomeNum >= mOptions->genomeLimit) {
             cerr << "UniqueKMER only supports up to " << mOptions->genomeLimit << " genomes, other genomes will be skipped." << endl;
             break;
